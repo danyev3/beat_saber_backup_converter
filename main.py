@@ -65,14 +65,17 @@ def convert_backup():
             else:
                 remove(file_path)
     for file in files_to_keep:
-        with open(f"{dir_path}/{file}", "r") as _file:
-            data = _file.read()
-        pattern = compile("custom_level_(........................................)")
-        custom_levels = pattern.findall(data)
-        for level in custom_levels:
-            data = data.replace(level, level.upper())
-        with open(f"{dir_path}/{file}", "w") as _file:
-            _file.write(data)
+        try:
+            with open(f"{dir_path}/{file}", "r") as _file:
+                data = _file.read()
+            pattern = compile("custom_level_(........................................)")
+            custom_levels = pattern.findall(data)
+            for level in custom_levels:
+                data = data.replace(level, level.upper())
+            with open(f"{dir_path}/{file}", "w") as _file:
+                _file.write(data)
+        except FileNotFoundError:
+            pass
     btn_path["state"] = "normal"
     backup_found_txt.set("Backup converted!")
 
