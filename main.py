@@ -22,10 +22,10 @@ files_to_keep = ["AvatarData.dat", "LocalDailyLeaderboards.dat", "LocalLeaderboa
 # Check if there's a Beat Saber backup in the directory
 def is_backup(bk_dir):
     dir_files = listdir(bk_dir)
-    is_bk = True
+    is_bk = False
     for file in files_to_keep:
-        if file not in dir_files:
-            is_bk = False
+        if file in dir_files:
+            is_bk = True
     if is_bk:
         btn_convert_backup["state"] = "normal"
         backup_found_txt.set("Beat Saber backup found!")
