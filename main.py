@@ -6,6 +6,7 @@ from re import compile
 import tkinter as tk
 from tkinter import filedialog
 from threading import *
+import json
 
 
 # Changing the working directory to the temporary one created by pyinstaller (mainly for the .ico)
@@ -16,7 +17,7 @@ except AttributeError:
 
 
 # Name of the files to keep in the backup folder
-files_to_keep = ["AvatarData.dat", "LocalDailyLeaderboards.dat", "LocalLeaderboards.dat", "PlayerData.dat", "settings.cfg"]
+files_to_keep = ["AvatarData.dat", "LocalDailyLeaderboards.dat", "LocalLeaderboards.dat", "PlayerData.dat", "settings.cfg", "SongLoader.json"]
 
 
 # Check if there's a Beat Saber backup in the directory
@@ -56,6 +57,8 @@ def convert_backup():
     btn_convert_backup["state"] = "disabled"
     backup_found_txt.set("Converting...")
     dir_path = backup_dir.get()
+
+    #Delete unnecessary files
     dir_files = listdir(dir_path)
     for file in dir_files:
         if file not in files_to_keep:
@@ -64,16 +67,48 @@ def convert_backup():
                 rmtree(file_path)
             else:
                 remove(file_path)
+
+    custom_levels_legacy_map = {}
+
+    pattern = compile(r"custom_level_(.{40})")
+
+    # First pass, get all songs without custom_level in the start or delete them
+
+    with open(f"{dir_path}/SongLoader.json", "r") as _file:
+        data = _file.read()
+        jsonData = json.loads(data)
+        for songName, songData in jsonData.items():
+
+            print(f"Checking {str(songName)}")
+            # Ignore legacy custom maps
+            if pattern.search(str(songName)):
+                print(f"skipping {songName}")
+                continue
+            
+            songNameStr = str(songName)
+            onlySongName = songNameStr[songNameStr.rfind('/'):]
+            custom_levels_legacy_map[songData["sha1"].lower()] = onlySongName
+
+    # print(f"The current json {str(custom_levels_legacy_map)}")
+
     for file in files_to_keep:
         try:
             with open(f"{dir_path}/{file}", "r") as _file:
                 data = _file.read()
-            pattern = compile("custom_level_(........................................)")
             custom_levels = pattern.findall(data)
-            for level in custom_levels:
-                data = data.replace(level, level.upper())
-            with open(f"{dir_path}/{file}", "w") as _file:
-                _file.write(data)
+            if custom_levels:
+                for level in custom_levels:
+
+                    print(f"Checking if {level.lower()} is in")
+                    if level.lower() in custom_levels_legacy_map:
+                        print(f"Replacing with actual name {custom_levels_legacy_map[level.lower()]}")
+                        data = data.replace(level, custom_levels_legacy_map[level.lower()])
+                    else:
+                        print("Replacing with upper")
+                        data = data.replace(level, level.upper())
+
+                with open(f"{dir_path}/{file}", "w") as _file:
+                    _file.write(data)
         except FileNotFoundError:
             pass
     btn_path["state"] = "normal"
