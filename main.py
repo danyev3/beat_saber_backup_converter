@@ -17,7 +17,8 @@ except AttributeError:
 
 
 # Name of the files to keep in the backup folder
-files_to_keep = ["AvatarData.dat", "LocalDailyLeaderboards.dat", "LocalLeaderboards.dat", "PlayerData.dat", "settings.cfg", "SongLoader.json"]
+files_to_keep = ["AvatarData.dat", "LocalDailyLeaderboards.dat",
+                 "LocalLeaderboards.dat", "PlayerData.dat", "settings.cfg"]
 
 
 # Check if there's a Beat Saber backup in the directory
@@ -58,7 +59,7 @@ def convert_backup():
     backup_found_txt.set("Converting...")
     dir_path = backup_dir.get()
 
-    #Delete unnecessary files
+    # Delete unnecessary files
     dir_files = listdir(dir_path)
     for file in dir_files:
         if file not in files_to_keep:
@@ -72,23 +73,6 @@ def convert_backup():
 
     pattern = compile(r"custom_level_(.{40})")
 
-    # First pass, get all songs without custom_level in the start or delete them
-
-    with open(f"{dir_path}/SongLoader.json", "r") as _file:
-        data = _file.read()
-        jsonData = json.loads(data)
-        for songName, songData in jsonData.items():
-
-            print(f"Checking {str(songName)}")
-            # Ignore legacy custom maps
-            if pattern.search(str(songName)):
-                print(f"skipping {songName}")
-                continue
-            
-            songNameStr = str(songName)
-            onlySongName = songNameStr[songNameStr.rfind('/'):]
-            custom_levels_legacy_map[songData["sha1"].lower()] = onlySongName
-
     # print(f"The current json {str(custom_levels_legacy_map)}")
 
     for file in files_to_keep:
@@ -98,19 +82,52 @@ def convert_backup():
             custom_levels = pattern.findall(data)
             if custom_levels:
                 for level in custom_levels:
-
-                    print(f"Checking if {level.lower()} is in")
-                    if level.lower() in custom_levels_legacy_map:
-                        print(f"Replacing with actual name {custom_levels_legacy_map[level.lower()]}")
-                        data = data.replace(level, custom_levels_legacy_map[level.lower()])
-                    else:
-                        print("Replacing with upper")
-                        data = data.replace(level, level.upper())
+                    data = data.replace(level, level.upper())
 
                 with open(f"{dir_path}/{file}", "w") as _file:
                     _file.write(data)
         except FileNotFoundError:
             pass
+
+
+    # This will look through the songs and will remove the duplicates. Will choose the highest score one
+    with open(f"{dir_path}/PlayerData.dat", "r") as _file:
+        data = _file.read()
+        jsonData = json.loads(data)
+        
+        for jsonObject in jsonData["localPlayers"][0]["levelsStatsData"]:
+
+            objectKey = str(jsonObject["levelId"] + \
+                jsonObject["beatmapCharacteristicName"] + \
+                str(jsonObject["difficulty"])).lower().replace(" ", "_").strip()
+
+            print(f"Checking level id {str(objectKey)}")
+
+            if objectKey in custom_levels_legacy_map:
+
+                print(f"Is Score is higher for {objectKey}")
+                highScore = int(jsonObject["highScore"])
+                if highScore > int(custom_levels_legacy_map[objectKey]["highScore"]):
+                    print("Overwriting")
+                    del custom_levels_legacy_map[objectKey]
+                    custom_levels_legacy_map[objectKey] = jsonObject
+            else:
+                custom_levels_legacy_map[objectKey] = jsonObject
+
+
+        del jsonData["localPlayers"][0]["levelsStatsData"]
+
+        list = []
+
+        for levelId in custom_levels_legacy_map:
+            list += [custom_levels_legacy_map[levelId]]
+
+        jsonData["localPlayers"][0]["levelsStatsData"] = list
+
+        with open(f"{dir_path}/PlayerData.dat", "w") as _file:
+            print("Writing json now")
+            json.dump(jsonData, _file)
+
     btn_path["state"] = "normal"
     backup_found_txt.set("Backup converted!")
 
@@ -144,10 +161,12 @@ frm.columnconfigure(1, weight=2)
 frm.grid(row=0, column=0, columnspan=2, padx=5, pady=5, sticky="we")
 # Directory selection button
 backup_dir = tk.StringVar()
-btn_path = tk.Button(master=frm, text='Select the "files" backup folder', command=thread_get_dir)
+btn_path = tk.Button(
+    master=frm, text='Select the "files" backup folder', command=thread_get_dir)
 btn_path.grid(row=0, rowspan=2, column=0, padx=5, pady=5, sticky="wens")
 # Directory selection entry
-path_ent = tk.Entry(master=frm, width=75, state='disabled', textvariable=backup_dir)
+path_ent = tk.Entry(master=frm, width=75, state='disabled',
+                    textvariable=backup_dir)
 path_ent.grid(row=0, column=1, padx=5, pady=5)
 # Song number labels
 backup_found_txt = tk.StringVar(value=f"Beat Saber backup not found")
@@ -155,7 +174,8 @@ lbl_quest = tk.Label(master=frm, textvariable=backup_found_txt)
 lbl_quest.grid(row=1, column=1, sticky="wens")
 
 # Conversion button
-btn_convert_backup = tk.Button(master=win, text="Convert Backup", command=thread_convert_backup)
+btn_convert_backup = tk.Button(
+    master=win, text="Convert Backup", command=thread_convert_backup)
 btn_convert_backup.grid(row=1, column=0, padx=5, pady=5, sticky="wens")
 # Disable the conversion button
 btn_convert_backup["state"] = "disabled"
