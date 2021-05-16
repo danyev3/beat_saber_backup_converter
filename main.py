@@ -16,7 +16,7 @@ except AttributeError:
 
 
 # Name of the files to keep in the backup folder
-files_to_keep = ["AvatarData.dat", "LocalDailyLeaderboards.dat", "LocalLeaderboards.dat", "PlayerData.dat", "settings.cfg"]
+files_to_keep = ["AvatarData.dat", "LocalDailyLeaderboards.dat", "LocalLeaderboards.dat", "PlayerData.dat", "settings.cfg", "AvatarData.dat.bak", "LocalDailyLeaderboards.dat.bak", "LocalLeaderboards.dat.bak", "PlayerData.dat.bak", "settings.cfg.bak"]
 
 
 # Check if there's a Beat Saber backup in the directory
@@ -54,6 +54,7 @@ def get_dir():
 def convert_backup():
     btn_path["state"] = "disabled"
     btn_convert_backup["state"] = "disabled"
+    checkbox_old_form["state"] = "disabled"
     backup_found_txt.set("Converting...")
     dir_path = backup_dir.get()
     dir_files = listdir(dir_path)
@@ -71,12 +72,16 @@ def convert_backup():
             pattern = compile("custom_level_(........................................)")
             custom_levels = pattern.findall(data)
             for level in custom_levels:
-                data = data.replace(level, level.upper())
+                if not convert_old_form.get():
+                    data = data.replace(level, level.upper())
+                else:
+                    data = data.replace(level, level.lower())
             with open(f"{dir_path}/{file}", "w") as _file:
                 _file.write(data)
         except FileNotFoundError:
             pass
     btn_path["state"] = "normal"
+    checkbox_old_form["state"] = "normal"
     backup_found_txt.set("Backup converted!")
 
 
@@ -99,7 +104,8 @@ win.title("Beat Saber Backup Converter")
 win.iconbitmap("icon.ico")
 win.resizable(False, False)
 win.rowconfigure(0, weight=0)
-win.rowconfigure(1, weight=1, minsize=75)
+win.rowconfigure(1, weight=0)
+win.rowconfigure(2, weight=1, minsize=75)
 win.columnconfigure(0, weight=1, minsize=5)
 
 # Cute growoy frame
@@ -119,9 +125,14 @@ backup_found_txt = tk.StringVar(value=f"Beat Saber backup not found")
 lbl_quest = tk.Label(master=frm, textvariable=backup_found_txt)
 lbl_quest.grid(row=1, column=1, sticky="wens")
 
+# Old format checkbox
+convert_old_form = tk.BooleanVar(value=0)
+checkbox_old_form = tk.Checkbutton(master=win, text="Convert to the old format instead of the new one (Don't use if you don't know what this is)", variable=convert_old_form, padx=10)
+checkbox_old_form.grid(row=1, column=0, sticky="w")
+
 # Conversion button
 btn_convert_backup = tk.Button(master=win, text="Convert Backup", command=thread_convert_backup)
-btn_convert_backup.grid(row=1, column=0, padx=5, pady=5, sticky="wens")
+btn_convert_backup.grid(row=2, column=0, padx=5, pady=5, sticky="wens")
 # Disable the conversion button
 btn_convert_backup["state"] = "disabled"
 
