@@ -127,7 +127,7 @@ lbl_quest.grid(row=1, column=1, sticky="wens")
 
 # Old format checkbox
 convert_old_form = tk.BooleanVar(value=0)
-checkbox_old_form = tk.Checkbutton(master=win, text="Convert to the old format instead of the new one (Don't use if you don't know what this is)", variable=convert_old_form, padx=10)
+checkbox_old_form = tk.Checkbutton(master=win, text="Convert to the old (1.13.2<) format instead of the new (1.13.4>) one (Don't use if you don't know what this is)", variable=convert_old_form, padx=10)
 checkbox_old_form.grid(row=1, column=0, sticky="w")
 
 # Conversion button
