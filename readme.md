@@ -1,2 +1,2 @@
 # Beat Saber Backup Converter
-A simple program that cleans your Beat Saber files folder backup and converts the custom songs data (Scores, favourites and so on) to the new format used with RSL (1.14.0).
+A simple program that cleans your Beat Saber files folder backup and converts the custom songs data (Scores, favourites and so on) to the new format used with RSL (1.13.4/1.14.0/1.15.0).
